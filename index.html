@@ -120,6 +120,7 @@
     <script>
       let map;
       let userLat, userLon;
+      let userAddress = "";
 
       function getLocation() {
         document.getElementById("location").classList.add("loading");
@@ -143,7 +144,22 @@
           "location"
         ).innerHTML = `Latitude: ${userLat} <br>Longitude: ${userLon}`;
 
-        initMap(userLat, userLon);
+        // Fetching the address using OpenStreetMap Nominatim API
+        fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1`
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            userAddress = data.display_name;
+            document.getElementById(
+              "location"
+            ).innerHTML += `<br>Address: ${userAddress}`;
+            initMap(userLat, userLon);
+          })
+          .catch((error) => {
+            console.error("Error fetching address:", error);
+            userAddress = "Address not found";
+          });
 
         document.getElementById("shareBtns").style.display = "block";
       }
@@ -181,15 +197,16 @@
         L.marker([lat, lon]).addTo(map).bindPopup("You are here!").openPopup();
       }
 
-      // Share Location Function
+      // Share Location with address
       function shareLocation() {
         const locationUrl = `https://www.openstreetmap.org/?mlat=${userLat}&mlon=${userLon}#map=15/${userLat}/${userLon}`;
+        const message = `I'm currently at: ${userAddress}.\nCheck my location: ${locationUrl}`;
 
         if (navigator.share) {
           navigator
             .share({
               title: "My Live Location",
-              text: "Here is my live location:",
+              text: message,
               url: locationUrl,
             })
             .then(() => {
